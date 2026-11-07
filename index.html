@@ -1,0 +1,712 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Escape Room Malavoglia</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alegreya:ital,wght@0,400;0,500;0,700;1,400&family=Alegreya+Sans:wght@400;500;700&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: sticky sea-blue header (clock + five letter slots that spell the keyword),
+   a hero with a fishing-net pattern, then the prose passage stays on the left
+   while the current room opens on the right. */
+:root{
+  --bg:#eef3f4; --surface:#ffffff; --ink:#0f2530; --muted:#4b656e; --line:#c9d8db;
+  --mare:#0e6173; --mare-soft:#dcedf1; --on-mare:#ffffff;
+  --ok:#1b6b45; --ok-soft:#e0f3e8;
+  --ko:#7a4c00; --ko-soft:#fbefd3;
+  --notte:#0b2733; --on-notte:#eef8fa; --notte-line:#2e5a6a; --notte-muted:#a9c6ce;
+  --lanterna:#f0b445; --on-lanterna:#0b2733;
+  --f-display:"Alegreya","Iowan Old Style",Georgia,serif;
+  --f-text:"Alegreya","Iowan Old Style",Georgia,serif;
+  --f-ui:"Alegreya Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#08171e; --surface:#0f2530; --ink:#e6f3f6; --muted:#9db9c2; --line:#24475a;
+    --mare:#7ccfdd; --mare-soft:#123a46; --on-mare:#06202a;
+    --ok:#6fdba6; --ok-soft:#133b3a;
+    --ko:#f2c46b; --ko-soft:#3a2f12;
+    --notte:#050f15; --notte-line:#1f4352;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#08171e; --surface:#0f2530; --ink:#e6f3f6; --muted:#9db9c2; --line:#24475a;
+  --mare:#7ccfdd; --mare-soft:#123a46; --on-mare:#06202a;
+  --ok:#6fdba6; --ok-soft:#133b3a;
+  --ko:#f2c46b; --ko-soft:#3a2f12;
+  --notte:#050f15; --notte-line:#1f4352;
+  color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-ui);font-size:18px;line-height:1.5;min-height:100vh}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:30;background:var(--notte)}
+.wrap{max-width:1180px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1,h2,h3,p,dl,dd{margin:0}
+h1,h2{text-wrap:balance}
+:focus-visible{outline:3px solid var(--mare);outline-offset:2px}
+.top :focus-visible{outline-color:var(--lanterna)}
+
+/* header */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:29;background:var(--notte);color:var(--on-notte)}
+.top .wrap{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 20px;padding-block:10px}
+.brand{display:flex;align-items:center;gap:10px;font-family:var(--f-display);font-weight:700;font-size:1.25rem;letter-spacing:.01em;min-width:0}
+.brand svg{flex:none}
+.slots{display:flex;gap:6px;order:3;flex:1 1 100%}
+.slot{flex:1 1 0;max-width:48px;aspect-ratio:1;display:grid;place-items:center;border:1px solid var(--notte-line);border-radius:3px;font-family:var(--f-mono);font-size:.95rem;color:var(--notte-muted);background:transparent}
+.slot.cur{border:2px solid var(--lanterna);color:var(--on-notte);animation:glow 2.4s ease-in-out infinite}
+.slot.on{background:var(--lanterna);border-color:var(--lanterna);color:var(--on-lanterna);font-family:var(--f-display);font-weight:700;font-size:1.45rem}
+.clock{display:flex;align-items:baseline;gap:8px}
+.clock b{font-family:var(--f-mono);font-weight:500;font-size:1.6rem;font-variant-numeric:tabular-nums;letter-spacing:.02em}
+.clock small{font-size:.78rem;letter-spacing:.12em;text-transform:uppercase;color:var(--notte-muted)}
+.ckbtn{font:500 .85rem var(--f-ui);background:none;border:1px solid var(--notte-line);color:var(--notte-muted);padding:.2rem .55rem;border-radius:3px;cursor:pointer}
+.ckbtn:hover{color:var(--on-notte);border-color:var(--on-notte)}
+.bar{height:3px;background:var(--notte-line)}
+.bar i{display:block;height:100%;width:100%;background:var(--lanterna);transition:width .25s linear}
+@keyframes glow{0%,100%{box-shadow:0 0 0 0 rgba(240,180,69,0)}50%{box-shadow:0 0 10px 1px rgba(240,180,69,.55)}}
+@media (min-width:760px){
+  .slots{order:0;flex:0 1 auto;margin-inline:auto}
+  .slot{width:42px;max-width:none;flex:none}
+}
+
+/* intro */
+.hero{color:#f2fafb;background:
+  repeating-linear-gradient(45deg,rgba(255,255,255,.055) 0 1px,transparent 1px 24px),
+  repeating-linear-gradient(-45deg,rgba(255,255,255,.055) 0 1px,transparent 1px 24px),
+  linear-gradient(180deg,#0b2733 0%,#0d4252 55%,#146677 100%)}
+.hero .wrap{padding-block:clamp(36px,7vw,84px) clamp(32px,5vw,56px);display:grid;gap:22px;position:relative}
+.eyebrow{font-family:var(--f-mono);font-size:.78rem;letter-spacing:.14em;text-transform:uppercase}
+.hero .eyebrow{color:#cfe6ea}
+.hero h1{font-family:var(--f-display);font-weight:700;font-size:clamp(2.4rem,7vw,4.6rem);line-height:1.04;max-width:15ch}
+.hero .sub{font-family:var(--f-text);font-size:1.35rem;max-width:46ch;color:#eaf6f8}
+.hero .boat{position:absolute;right:max(16px,env(safe-area-inset-right,0px));top:clamp(24px,5vw,56px);width:clamp(70px,14vw,150px);height:auto;opacity:.95}
+.rules{display:grid;gap:10px;max-width:62ch;padding:0;margin:0;list-style:none}
+.rules li{display:grid;grid-template-columns:3.6rem 1fr;gap:12px;font-size:1.05rem}
+.rules b{font-family:var(--f-mono);font-weight:500;color:#ffd98a}
+.hero .btn{justify-self:start}
+.intro-foot{padding-block:22px 40px;color:var(--muted);font-size:1rem;max-width:70ch}
+
+/* buttons */
+.btn{font:700 1rem var(--f-ui);padding:.7rem 1.2rem;border-radius:3px;border:1px solid var(--ink);background:var(--ink);color:var(--bg);cursor:pointer}
+.btn:hover{filter:brightness(1.1)}
+.btn.mare{background:var(--mare);border-color:var(--mare);color:var(--on-mare)}
+.btn.ghost{background:transparent;color:var(--ink)}
+.btn.night{background:#0b2733;border-color:#f0b445;color:#fff}
+.btn[disabled]{opacity:.5;cursor:default}
+
+/* stage */
+main>.wrap{padding-block:24px 64px}
+.stage{display:grid;grid-template-columns:minmax(0,1fr);gap:20px}
+.brano{background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:16px 18px}
+.brano header{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:10px}
+.brano h2{font-family:var(--f-display);font-weight:700;font-size:1.2rem;line-height:1.2}
+.brano .by{color:var(--muted);font-size:.9rem;margin-top:2px}
+.brano .tog{font:500 .9rem var(--f-ui);background:none;border:1px solid var(--line);color:var(--ink);padding:.3rem .6rem;border-radius:3px;cursor:pointer;flex:none}
+.brano.shut .scroll{display:none}
+.brano .scroll{max-height:48vh;overflow:auto;padding-right:6px}
+.par{display:grid;grid-template-columns:1.5rem minmax(0,1fr);gap:4px;font-family:var(--f-text);font-size:1.13rem;line-height:1.5;margin-bottom:10px}
+.par .pn{font-family:var(--f-mono);font-size:.68rem;color:var(--muted);padding-top:.5rem}
+.brano sup{font-family:var(--f-mono);font-size:.6rem;color:var(--mare);margin-left:1px}
+.brano h3{font-family:var(--f-mono);font-size:.74rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:500;margin:14px 0 6px}
+.brano dl{display:grid;gap:3px;font-size:.95rem;line-height:1.4}
+.brano dl div{display:grid;grid-template-columns:minmax(0,8.5rem) minmax(0,1fr);gap:8px}
+.brano dt{font-weight:700}
+.brano dd{color:var(--muted)}
+.credit{margin-top:12px;font-size:.8rem;color:var(--muted)}
+@media (min-width:900px){
+  .stage{grid-template-columns:minmax(330px,450px) minmax(0,1fr);gap:32px;align-items:start}
+  .brano{position:sticky;top:calc(env(safe-area-inset-top,0px) + 92px)}
+  .brano .scroll{max-height:calc(100vh - 230px)}
+  .brano .tog{display:none}
+  .brano.shut .scroll{display:block}
+}
+
+/* room */
+.room{min-width:0;scroll-margin-top:96px}
+.room .eyebrow{color:var(--mare)}
+.room h2{font-family:var(--f-display);font-weight:700;font-size:clamp(1.9rem,4.5vw,2.6rem);line-height:1.08;margin-top:4px}
+.room h2:focus{outline:none}
+.lead{font-family:var(--f-text);font-size:1.28rem;color:var(--muted);margin-top:10px;max-width:60ch}
+.late{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;justify-content:space-between;background:var(--mare-soft);border:1px solid var(--mare);padding:10px 14px;border-radius:3px;margin-bottom:16px;font-size:1rem}
+.task{padding-block:20px;margin-top:20px;border-top:1px solid var(--line)}
+.task .tn{font-family:var(--f-mono);font-size:.74rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+.task .q{font-family:var(--f-text);font-size:1.3rem;line-height:1.4;max-width:62ch}
+.task .q em{font-style:italic}
+.opts{display:grid;gap:8px;margin-top:14px;max-width:68ch}
+.opt{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border:1px solid var(--line);border-radius:3px;background:var(--surface);cursor:pointer;line-height:1.4}
+.opt:hover{border-color:var(--ink)}
+.opt input{margin-top:.3rem;accent-color:var(--mare);flex:none}
+.opt:has(input:checked){border-color:var(--mare);background:var(--mare-soft)}
+.row{display:grid;grid-template-columns:minmax(0,1fr);gap:6px;padding:10px 8px;border-bottom:1px dashed var(--line);max-width:72ch;border-radius:3px}
+.row .p{font-family:var(--f-text);font-size:1.12rem;line-height:1.35}
+.row.good{background:var(--ok-soft)}
+.row.bad{background:var(--ko-soft)}
+.row.good .mk::before{content:"✓ ";color:var(--ok);font-weight:700}
+.row.bad .mk::before{content:"↻ ";color:var(--ko);font-weight:700}
+.matchlist,.sortlist{margin-top:10px}
+.sortlist .row{max-width:none}
+@media (min-width:640px){
+  .sortlist .row{grid-template-columns:minmax(0,1fr) minmax(0,25rem);align-items:center;gap:8px 16px}
+}
+select{font:inherit;font-size:1rem;color:var(--ink);background:var(--surface);border:1px solid var(--ink);border-radius:3px;padding:.5rem .6rem;width:100%;max-width:36rem;min-width:0}
+.seg{display:flex;flex-wrap:wrap;gap:6px}
+.chip{position:relative;cursor:pointer}
+.chip input{position:absolute;opacity:0;inset:0;width:100%;height:100%;margin:0;cursor:pointer}
+.chip span{display:block;padding:.35rem .7rem;border:1px solid var(--line);border-radius:3px;background:var(--surface);font-size:.98rem}
+.chip:hover span{border-color:var(--ink)}
+.chip:has(input:checked) span{border-color:var(--mare);background:var(--mare-soft);font-weight:700}
+.chip:has(input:focus-visible){outline:3px solid var(--mare);outline-offset:2px}
+.tact{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}
+.fb{font-size:1rem;min-height:1.4em;margin-top:10px;max-width:68ch}
+.task.ok{border-top-color:var(--ok)}
+.task.ok .fb{color:var(--ok);font-weight:700}
+.task.ko .fb{color:var(--ko);background:var(--ko-soft);padding:8px 10px;border-radius:3px;font-weight:500}
+.why{margin-top:12px;padding:12px 14px;border-left:4px solid var(--mare);background:var(--mare-soft);font-size:1.02rem;max-width:68ch;border-radius:0 3px 3px 0}
+.why b{font-family:var(--f-mono);font-size:.74rem;letter-spacing:.1em;text-transform:uppercase;color:var(--mare);display:block;margin-bottom:2px;font-weight:500}
+.door{display:flex;flex-wrap:wrap;align-items:center;gap:10px 12px;padding-top:22px;border-top:1px solid var(--line);margin-top:20px}
+.door.fin{border-top:none;margin-top:0}
+.hintbox{margin-top:14px;padding:12px 14px;border:1px dashed var(--mare);border-radius:3px;font-size:1.02rem;max-width:68ch}
+.hintbox b{font-family:var(--f-mono);font-size:.74rem;letter-spacing:.1em;text-transform:uppercase;color:var(--mare);display:block;margin-bottom:2px;font-weight:500}
+.clear{margin-top:22px;border:1px solid var(--ok);background:var(--ok-soft);padding:18px;display:grid;grid-template-columns:auto minmax(0,1fr);gap:18px;align-items:center;border-radius:4px}
+.bigletter{font-family:var(--f-display);font-weight:700;font-size:3.6rem;line-height:1;width:5rem;height:5rem;display:grid;place-items:center;background:var(--lanterna);color:var(--on-lanterna);border-radius:3px}
+.clear .t{font-weight:700;margin-bottom:4px}
+.clear .nt{font-size:1.02rem}
+.clear .btn{grid-column:1/-1;justify-self:start}
+
+/* final door and result */
+.keybox{display:grid;gap:12px;max-width:26rem;margin-top:16px}
+.keybox input{font-family:var(--f-mono);font-size:1.6rem;letter-spacing:.35em;text-transform:uppercase;text-align:center;padding:.6rem;color:var(--ink);background:var(--surface);border:1px solid var(--ink);border-radius:3px;width:100%;min-width:0}
+.win h2{font-size:clamp(2.2rem,6vw,3.6rem)}
+.stats{display:flex;flex-wrap:wrap;gap:10px 28px;margin-top:18px;font-family:var(--f-mono);font-size:.95rem}
+.stats b{font-weight:500;font-size:1.3rem;display:block}
+.method{margin:26px 0 0;padding:0;list-style:none;display:grid;gap:12px;max-width:70ch}
+.method li{padding-left:14px;border-left:3px solid var(--mare);font-size:1.02rem}
+.method strong{font-family:var(--f-display);font-weight:700;font-size:1.2rem;display:block}
+.method .st{font-family:var(--f-mono);font-size:.74rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);display:block}
+.teach{position:fixed;inset:0;z-index:60;overflow:auto;background:var(--bg);padding-block:calc(env(safe-area-inset-top,0px) + 24px) 64px}
+.teach h2{font-family:var(--f-display);font-weight:700;font-size:2rem}
+.teach .nt{color:var(--muted);font-size:.95rem;margin-top:8px}
+.teach table{border-collapse:collapse;width:100%;font-size:1rem}
+.teach td,.teach th{border-top:1px solid var(--line);padding:8px 10px 8px 0;vertical-align:top;text-align:left}
+.teach .scr{overflow-x:auto}
+.teach h3{font-family:var(--f-display);font-weight:700;font-size:1.4rem;margin-top:28px}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+</style>
+<header class="top">
+  <div class="wrap">
+    <div class="brand">
+      <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 2 L11 16 L3 16 Z" fill="#f0b445"/><path d="M13 6 L13 16 L21 16 Z" fill="#f0b445"/><path d="M2 18 H22 L19 22 H5 Z" fill="#f0b445"/></svg>
+      <span>Escape Room Malavoglia</span>
+    </div>
+    <div class="slots" id="slots" role="list" aria-label="Parola chiave: una lettera per ogni stanza"></div>
+    <div class="clock" id="clock"><b id="clk">20:00</b><small>tempo</small><button class="ckbtn" id="ckbtn" type="button" aria-pressed="false">Nascondi</button></div>
+  </div>
+  <div class="bar" id="bar" aria-hidden="true"><i id="barfill"></i></div>
+</header>
+<main id="app"></main>
+
+<script>
+(function(){
+'use strict';
+
+/* ---------- configurazione ---------- */
+var DURATION = 1200;   // secondi (20 minuti), solo come guida: nessuna penalità
+var KEY      = 'VERGA';
+
+/* ---------- testo ---------- */
+var PARAS = [
+  "I Malavoglia si arrabattavano in tutti i modi per far quattrini. La Longa prendeva qualche rotolo di tela da tessere, e andava anche al lavatoio per conto degli altri; padron ’Ntoni coi nipoti s’erano messi a giornata, s’aiutavano come potevano, e se la sciatica piegava il vecchio come un uncino, rimaneva nel cortile a rifar le maglie alle reti, o raccomodar nasse<sup>1</sup>, e mettere in ordine degli attrezzi, ché era pratico di ogni cosa del mestiere. Luca andava a lavorare nel ponte della ferrovia, per cinquanta centesimi al giorno, sebbene suo fratello ’Ntoni dicesse che non bastavano per le camicie che sciupava a trasportar sassi nel corbello<sup>2</sup>; ma Luca non badava che si sciupava anche le spalle e Alessi andava a raccattar dei gamberi lungo gli scogli, o dei vermiciattoli per l’esca, che si vendevano a dieci soldi il rotolo, e alle volte arrivava sino all’Ognina e al Capo dei Mulini, e tornava coi piedi in sangue. Ma compare Zuppiddo si prendeva dei bei soldi ogni sabato, per rabberciare<sup>3</sup> la Provvidenza, e ce ne volevano delle nasse da acconciare, dei sassi della ferrovia, dell’esca a dieci soldi, e della tela da imbiancare, coll’acqua sino ai ginocchi e il sole sulla testa, per fare quarant’onze<sup>4</sup>! I Morti<sup>5</sup> erano venuti, e lo zio Crocifisso non faceva altro che passeggiare per la straduccia, colle mani dietro la schiena, che pareva il basilisco<sup>6</sup>.",
+  "– Questa è storia che va a finire coll’usciere! – andava dicendo lo zio Crocifisso con don Silvestro e con Don Giammaria il vicario.",
+  "– D’usciere non ci sarà bisogno, zio Crocifisso – gli rispose padron ’Ntoni quando venne a sapere quello che andava dicendo Campana di legno. – I Malavoglia sono stati sempre galantuomini, e non hanno avuto bisogno d’usciere.",
+  "– A me non me ne importa – rispose lo zio Crocifisso colle spalle al muro, sotto la tettoia del cortile, mentre stavano accatastando i suoi sarmenti<sup>7</sup>. – Io non so altro che devo esser pagato.",
+  "Finalmente, per intromissione del vicario, Campana di legno si contentò di aspettare a Natale ad esser pagato, prendendosi per frutti quelle settantacinque lire che Maruzza aveva raccolto soldo a soldo in fondo alla calza nascosta sotto il materasso.",
+  "– Ecco com’è la cosa! – borbottava ’Ntoni di padron ’Ntoni – lavoriamo notte e giorno per lo zio Crocifisso. Quando abbiamo messo insieme una lira, ce la prende Campana di legno.",
+  "Il nonno, colla Maruzza, si consolavano a far castelli in aria per l’estate, quando ci sarebbero state le acciughe da salare, e i fichidindia a dieci un grano<sup>8</sup>, e facevano dei grandi progetti d’andare alla tonnara, e per la pesca del pesce spada, dove si buscava una buona giornata, e intanto mastro Turi avrebbe messo in ordine la Provvidenza. I ragazzi stavano attenti, col mento in mano, a quei discorsi che si facevano sul ballatoio, o dopo cena; ma ’Ntoni che veniva da lontano, e il mondo lo conosceva meglio degli altri, si annoiava a sentir quelle chiacchiere, e preferiva andarsene a girandolare attorno all’osteria, dove c’era tanta gente che non faceva nulla."
+];
+var WORDS = [
+  ["1. nasse","ceste per la pesca"],
+  ["2. corbello","cesto"],
+  ["3. rabberciare","aggiustare alla meglio"],
+  ["4. quarant’onze","l’importo del debito"],
+  ["5. i Morti","la scadenza fissata per pagare il debito"],
+  ["6. basilisco","mostro delle leggende che uccideva con lo sguardo"],
+  ["7. sarmenti","rami secchi di vite, da bruciare"],
+  ["8. grano","moneta di poco valore"]
+];
+var WHO = [
+  ["Padron ’Ntoni","il nonno, capo della famiglia Malavoglia"],
+  ["’Ntoni","il nipote maggiore, che ha visto il mondo fuori dal paese"],
+  ["Maruzza (la Longa)","la madre di ’Ntoni, Luca e Alessi"],
+  ["Luca e Alessi","i fratelli minori di ’Ntoni"],
+  ["Zio Crocifisso","detto Campana di legno, il creditore"],
+  ["Compare Zuppiddo","detto mastro Turi, ripara la barca Provvidenza"],
+  ["Don Silvestro, Don Giammaria","il segretario comunale e il vicario (il prete)"]
+];
+
+/* ---------- stanze e prove ----------
+   type: choice | multi | match | sort
+   ok: indice (choice), array di indici (multi), per riga (match/sort) */
+var ROOMS = [
+ { nome:"Il cortile", letter:"V", step:"Comprensione",
+   intro:"Nel cortile dei Malavoglia si lavora e si aspetta Natale. Prima di analizzare un brano bisogna capire che cosa succede: chi fa che cosa, e in che ordine.",
+   hint:"Ogni evento si riconosce da un’azione o da una battuta. Parti dal primo paragrafo (¶1) e segui il testo fino all’ultimo (¶7).",
+   note:"Si comincia dalla comprensione: riassumere gli eventi in ordine e chiarire i riferimenti che oggi non sono immediati, come «i Morti» per indicare la scadenza del debito.",
+   tasks:[
+     { type:"match",
+       q:"Rimetti in ordine gli eventi del brano. Per ciascuno scegli il posto giusto, dal 1° al 6°.",
+       shared:["1° (inizio)","2°","3°","4°","5°","6° (fine)"],
+       items:[
+         {p:"Per intromissione del vicario, lo zio Crocifisso aspetta fino a Natale e si prende come interessi le 75 lire di Maruzza", ok:2},
+         {p:"’Ntoni, annoiato, preferisce andare all’osteria", ok:5},
+         {p:"I Malavoglia fanno ogni lavoro possibile per mettere insieme denaro", ok:0},
+         {p:"Il nonno e Maruzza fanno progetti per l’estate", ok:4},
+         {p:"Lo zio Crocifisso minaccia l’usciere; padron ’Ntoni risponde che i Malavoglia sono galantuomini, ma il creditore vuole solo essere pagato", ok:1},
+         {p:"’Ntoni si lamenta: ogni lira messa da parte se la prende lo zio Crocifisso", ok:3}
+       ],
+       nudge:"Rileggi i paragrafi nell’ordine in cui compaiono: prima il lavoro (¶1), poi il dialogo con lo zio Crocifisso (¶2-5).",
+       why:"L’ordine segue il testo: i lavori (¶1), lo scontro con lo zio Crocifisso (¶2-4) e la proroga a Natale (¶5), il lamento di ’Ntoni (¶6), i progetti per l’estate e l’osteria (¶7). Un buon riassunto mette gli eventi in ordine, senza giudizi e senza citazioni lunghe." },
+     { type:"choice",
+       q:"Nel primo paragrafo si legge «I Morti erano venuti». Che cosa significa?",
+       opts:["Sono morti alcuni parenti dei Malavoglia.",
+             "È arrivata la scadenza fissata per pagare il debito, intorno alla festa dei morti (2 novembre).",
+             "I fantasmi dei defunti tormentano lo zio Crocifisso."], ok:1,
+       nudge:"Guarda la nota 5 sotto il brano e chiediti perché, subito dopo, lo zio Crocifisso passeggia come un basilisco.",
+       why:"È un riferimento temporale: «i Morti» indicano il periodo in cui il debito va pagato. Capirlo spiega perché lo zio Crocifisso «non faceva altro che passeggiare», pronto a riscuotere." }
+   ]},
+ { nome:"La piazza del paese", letter:"E", step:"Narratore",
+   intro:"In piazza tutti parlano di tutti. Chi sta raccontando? Per capirlo bisogna ascoltare la voce che tiene insieme il brano.",
+   hint:"Chiediti chi parla quando il testo dice «Campana di legno»: un estraneo colto o uno del paese? E il narratore dice mai «io» o commenta ciò che è giusto o sbagliato?",
+   note:"Il narratore è esterno, ma si abbassa al livello della comunità (regressione): usa soprannomi e modi di dire popolari, adotta il punto di vista dei personaggi e non giudica. Così sembra che i fatti si raccontino da soli.",
+   tasks:[
+     { type:"multi",
+       q:"Quali affermazioni descrivono bene il narratore del brano? Seleziona tutte quelle giuste.",
+       opts:["È esterno: racconta in terza persona e non è un personaggio della storia.",
+             "È un membro della famiglia Malavoglia che racconta ciò che ha vissuto.",
+             "Parla come un abitante del paese: usa soprannomi e modi di dire popolari, come «Campana di legno» e «far castelli in aria».",
+             "Sa più dei personaggi e li commenta dall’alto, dicendo chi ha ragione e chi ha torto.",
+             "Non esprime giudizi espliciti: lascia parlare i fatti e le battute dei personaggi.",
+             "Condanna apertamente l’avarizia dello zio Crocifisso."], ok:[0,2,4],
+       nudge:"Cerca nel testo un «io» o un commento del tipo «che brutta cosa»: ci sono?",
+       why:"Il narratore è esterno ma «regredisce»: usa le parole e il punto di vista del paese. Non dice mai «io» e non commenta. È la tecnica dell’impersonalità, tipica del verismo: l’autore scompare dietro i fatti." },
+     { type:"choice",
+       q:"Leggi: «ma compare Zuppiddo si prendeva dei bei soldi ogni sabato, per rabberciare la Provvidenza, e ce ne volevano delle nasse da acconciare, dei sassi della ferrovia, dell’esca a dieci soldi, e della tela da imbiancare […] per fare quarant’onze!». Di chi è il punto di vista?",
+       opts:["Dei Malavoglia: i loro pensieri vengono riportati senza virgolette né verbi introduttivi (discorso indiretto libero).",
+             "Del narratore, che osserva con distacco e disapprova i lavori di compare Zuppiddo.",
+             "Di compare Zuppiddo, che si lamenta della fatica."], ok:0,
+       nudge:"Chi pensa «ce ne volevano delle nasse da acconciare… per fare quarant’onze!»? Chi lavora e deve pagare, o chi guarda da fuori?",
+       why:"È discorso indiretto libero: il narratore riporta i pensieri dei Malavoglia senza «pensavano che» e senza virgolette. Si sente la loro fatica nell’esclamazione finale: è la loro voce, non un commento neutro." }
+   ]},
+ { nome:"Il molo", letter:"R", step:"Stile",
+   intro:"Sul molo si intrecciano le reti, e anche il testo è intrecciato di frasi legate una all’altra. Qui si osserva come è scritto il brano.",
+   hint:"Un confronto introdotto da «come» è una similitudine. Per la sintassi osserva quante volte compare la «e» e quanto le frasi somigliano al parlato.",
+   note:"Poche figure retoriche, ma efficaci perché prese dal mondo popolare. Sintassi paratattica, vicina al parlato. Il dialogo fitto dà voce diretta ai personaggi e fa conoscere i loro caratteri.",
+   tasks:[
+     { type:"match",
+       q:"Collega ogni espressione alla figura retorica o al procedimento giusto.",
+       shared:["anafora","enumerazione","iperbole","modo di dire popolare","ossimoro","similitudine"],
+       items:[
+         {p:"«se la sciatica piegava il vecchio come un uncino» (¶1)", ok:5},
+         {p:"«ce ne volevano delle nasse da acconciare, dei sassi della ferrovia, dell’esca a dieci soldi, e della tela da imbiancare» (¶1)", ok:1},
+         {p:"«si consolavano a far castelli in aria» (¶7)", ok:3},
+         {p:"«lavoriamo notte e giorno per lo zio Crocifisso. Quando abbiamo messo insieme una lira, ce la prende Campana di legno» (¶6)", ok:2}
+       ],
+       nudge:"Per l’elenco di lavori pensa a una serie di elementi messi uno dopo l’altro. Per le parole di ’Ntoni pensa a un’esagerazione detta per sfogo.",
+       why:"Il confronto con «come» è una similitudine. L’elenco dei lavori accumula l’idea di una fatica senza fine (enumerazione). «Far castelli in aria» è un modo di dire popolare. «Notte e giorno» e «una lira… ce la prende» esagerano per esprimere la rabbia di ’Ntoni (iperbole)." },
+     { type:"multi",
+       q:"Che cosa si può dire della sintassi e del dialogo? Seleziona tutte le affermazioni giuste.",
+       opts:["Prevale la coordinazione: i fatti si susseguono uniti da «e» e da virgole (paratassi).",
+             "La costruzione delle frasi imita il parlato, per esempio «ce ne volevano delle nasse da acconciare».",
+             "Il dialogo dà voce diretta ai personaggi e fa emergere il loro carattere senza spiegazioni del narratore.",
+             "La sintassi è fatta di molte subordinate gerarchiche, come nella prosa letteraria aulica.",
+             "Il lessico è raro e latineggiante, lontano dal mondo dei pescatori.",
+             "I dialoghi servono solo ad allungare il testo e non danno informazioni."], ok:[0,1,2],
+       nudge:"Leggi ad alta voce l’inizio del brano: suona come un libro di retorica o come qualcuno che racconta?",
+       why:"Il brano è scritto con frasi coordinate e parole di tutti i giorni, vicine alla lingua parlata. Il dialogo (¶2-4 e ¶6) fa parlare direttamente lo zio Crocifisso, padron ’Ntoni e ’Ntoni: così il loro carattere emerge dalle battute." }
+   ]},
+ { nome:"La strada dello zio Crocifisso", letter:"G", step:"Logica dell’utile",
+   intro:"Lo zio Crocifisso passeggia con le mani dietro la schiena e fa i conti. In questa stanza si cercano le parole e le scelte che mettono al centro il denaro e l’interesse.",
+   hint:"Per ogni personaggio chiediti che cosa vuole da questa storia: soldi, onore, lavoro, un futuro diverso? Nel testo cerca le monete: lire, soldi, centesimi, onze, grano.",
+   note:"La logica dell’utile domina il brano: il debito, gli interessi, le monete contate con precisione. Nessuno vive fuori da questo calcolo, e il narratore non lo condanna: lo mostra.",
+   tasks:[
+     { type:"match",
+       q:"Collega ogni personaggio al suo rapporto con il denaro.",
+       shared:null,
+       items:[
+         {p:"Lo zio Crocifisso («Campana di legno»)", opts:["Creditore: pensa solo a ottenere il denaro che gli spetta","Artigiano che guadagna con le riparazioni ogni settimana","Debitore che difende l’onore della famiglia","Madre che ha risparmiato «soldo a soldo», ma il risparmio finisce in interessi","Giovane che vede la fatica sprecata e preferisce chi non lavora","Funzionario che fa rispettare la legge"], ok:0},
+         {p:"Compare Zuppiddo (mastro Turi)", opts:["Creditore: pensa solo a ottenere il denaro che gli spetta","Artigiano che guadagna con le riparazioni ogni settimana","Debitore che difende l’onore della famiglia","Madre che ha risparmiato «soldo a soldo», ma il risparmio finisce in interessi","Giovane che vede la fatica sprecata e preferisce chi non lavora","Funzionario che fa rispettare la legge"], ok:1},
+         {p:"Padron ’Ntoni, il nonno", opts:["Creditore: pensa solo a ottenere il denaro che gli spetta","Artigiano che guadagna con le riparazioni ogni settimana","Debitore che difende l’onore della famiglia","Madre che ha risparmiato «soldo a soldo», ma il risparmio finisce in interessi","Giovane che vede la fatica sprecata e preferisce chi non lavora","Funzionario che fa rispettare la legge"], ok:2},
+         {p:"Maruzza, la madre", opts:["Creditore: pensa solo a ottenere il denaro che gli spetta","Artigiano che guadagna con le riparazioni ogni settimana","Debitore che difende l’onore della famiglia","Madre che ha risparmiato «soldo a soldo», ma il risparmio finisce in interessi","Giovane che vede la fatica sprecata e preferisce chi non lavora","Funzionario che fa rispettare la legge"], ok:3},
+         {p:"’Ntoni, il nipote maggiore", opts:["Creditore: pensa solo a ottenere il denaro che gli spetta","Artigiano che guadagna con le riparazioni ogni settimana","Debitore che difende l’onore della famiglia","Madre che ha risparmiato «soldo a soldo», ma il risparmio finisce in interessi","Giovane che vede la fatica sprecata e preferisce chi non lavora","Funzionario che fa rispettare la legge"], ok:4}
+       ],
+       nudge:"Una delle sei descrizioni non corrisponde a nessuno: l’usciere viene nominato, ma non compare mai. Rileggi le battute di ciascun personaggio.",
+       why:"Ognuno ha un rapporto diverso con il denaro: per lo zio Crocifisso è l’unica cosa che conta («Io non so altro che devo esser pagato»), per compare Zuppiddo è un guadagno sicuro, per padron ’Ntoni è questione d’onore, per Maruzza è un risparmio fatto di sacrifici e per ’Ntoni è una fatica che sembra inutile." },
+     { type:"multi",
+       q:"Quali di queste frasi mostrano la logica dell’utile e dell’interesse? Seleziona tutte quelle giuste.",
+       opts:["«Io non so altro che devo esser pagato»",
+             "«prendendosi per frutti quelle settantacinque lire»",
+             "«per cinquanta centesimi al giorno, sebbene suo fratello ’Ntoni dicesse che non bastavano per le camicie che sciupava»",
+             "«I Malavoglia sono stati sempre galantuomini»",
+             "«I ragazzi stavano attenti, col mento in mano»"], ok:[0,1,2],
+       nudge:"Cerca le frasi in cui qualcuno fa un calcolo, riscuote un credito o confronta una paga con una spesa.",
+       why:"«Frutti» significa interessi: lo zio Crocifisso si prende le 75 lire come interesse e aspetta il resto. Anche il conto di ’Ntoni sulla paga di Luca (le camicie costano più di quanto guadagna) e la frase dello zio mostrano un mondo in cui tutto si misura in denaro. «Galantuomini» appartiene all’onore, che è il valore opposto." }
+   ]},
+ { nome:"L’osteria", letter:"A", step:"Interpretazione",
+   intro:"All’osteria ’Ntoni guarda chi non fa nulla. Ultima stanza: si mette insieme tutto e si collega il brano al resto dell’opera di Verga.",
+   hint:"Pensa al contrasto tra il nonno, che crede nel lavoro e nell’onore, e ’Ntoni, che «il mondo lo conosceva meglio degli altri». Nel resto del romanzo questo contrasto diventa sempre più forte.",
+   note:"Il brano mostra una famiglia laboriosa che il lavoro non basta a salvare dal debito. Il contrasto tra il nonno e ’Ntoni anticipa la crisi dei valori tradizionali, che il romanzo svilupperà. Il tema si collega alla Prefazione ai Malavoglia, a Rosso Malpelo e a La roba.",
+   tasks:[
+     { type:"sort",
+       q:"Il testo distingue ciò che i Malavoglia fanno già da ciò che sperano di fare. Assegna ogni attività alla categoria giusta.",
+       cats:["Lavoro che fanno già","Progetto per l’estate"],
+       items:[{w:"tessere la tela",ok:0},{w:"salare le acciughe",ok:1},{w:"portare sassi al ponte della ferrovia",ok:0},{w:"andare alla tonnara",ok:1},{w:"raccogliere gamberi e vermiciattoli per l’esca",ok:0},{w:"pescare il pesce spada",ok:1}],
+       nudge:"I progetti sono nel paragrafo dei «castelli in aria» (¶7) e usano il tempo futuro: «quando ci sarebbero state…».",
+       why:"I mestieri di oggi sono lavori a giornata, umili e faticosi: tela, lavatoio, sassi, esche, reti. I progetti dell’estate riguardano la vita da pescatori, che ora è sospesa. La differenza mostra quanto la famiglia dipenda dal mare e quanto il suo equilibrio sia fragile." },
+     { type:"choice",
+       q:"Quale lettura complessiva del brano è la più completa?",
+       opts:["I Malavoglia lavorano senza sosta, ma il lavoro non basta a pagare il debito. Il nonno crede ancora nel sacrificio e nell’onore, mentre ’Ntoni comincia a non crederci più.",
+             "I Malavoglia ricevono presto una ricompensa per il loro impegno, e il nonno guarda al futuro con sicurezza.",
+             "Il brano critica i Malavoglia perché sono pigri e pensano solo a sognare, come ’Ntoni."], ok:0,
+       nudge:"Rileggi la fine del brano: il nonno e Maruzza «si consolavano a far castelli in aria». È un segno di sicurezza o di fatica?",
+       why:"L’interpretazione mette insieme i temi: lavoro, debito, onore e distanza tra generazioni. Il brano non loda e non condanna nessuno: mostra una famiglia che lavora tanto senza uscire dalla difficoltà, e un giovane che comincia a guardare altrove." },
+     { type:"multi",
+       q:"Quali collegamenti con altri testi sono pertinenti? Seleziona tutti quelli giusti.",
+       opts:["La Prefazione ai Malavoglia: la «fiumana del progresso» travolge chi resta indietro.",
+             "Rosso Malpelo: il lavoro duro nella cava e lo sfruttamento dei più deboli.",
+             "La roba: Mazzarò e l’accumulo di beni come unico valore.",
+             "La pioggia nel pineto di D’Annunzio: la fusione dell’uomo con la natura.",
+             "Il fanciullino di Pascoli: la poesia come stupore del bambino davanti al mondo."], ok:[0,1,2],
+       nudge:"Due dei cinque testi appartengono a poeti di un’altra stagione, che non parlano di lavoro né di debiti.",
+       why:"La Prefazione presenta la «fiumana del progresso» e i «vinti»: i Malavoglia sono al primo gradino, quello della lotta per i bisogni materiali. Rosso Malpelo mostra il lavoro come sfruttamento, La roba la logica dell’utile portata all’estremo. D’Annunzio e Pascoli appartengono a un altro mondo poetico." }
+   ]}
+];
+
+/* ---------- utilità ---------- */
+var $ = function(s){ return document.querySelector(s); };
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function strip(s){ return esc(String(s).replace(/<[^>]+>/g,'')); }
+function norm(s){ return String(s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]/g,''); }
+function fmt(sec){ sec=Math.max(0,Math.ceil(sec)); return ('0'+Math.floor(sec/60)).slice(-2)+':'+('0'+(sec%60)).slice(-2); }
+function optsOf(t,it){ return it.opts||t.shared; }
+
+/* ---------- stato ---------- */
+var S;
+function fresh(){
+  return {
+    phase:'intro', room:0,
+    solved:ROOMS.map(function(){return false;}),
+    done:ROOMS.map(function(r){return r.tasks.map(function(){return false;});}),
+    tries:ROOMS.map(function(r){return r.tasks.map(function(){return 0;});}),
+    hint:ROOMS.map(function(){return false;}),
+    startAt:0, hints:0, ended:false, timeUp:false, lateGone:false, hideClock:S?S.hideClock:false
+  };
+}
+S = {hideClock:false}; S = fresh();
+
+/* ---------- tempo (solo una guida, nessuna penalità) ---------- */
+function left(){ return DURATION-(Date.now()-S.startAt)/1000; }
+function tick(){
+  var clk=$('#clk'), bar=$('#barfill'), box=$('#clock');
+  $('#bar').style.visibility=S.hideClock?'hidden':'visible';
+  if(S.phase==='intro'){ clk.textContent=S.hideClock?'--:--':fmt(DURATION); bar.style.width='100%'; box.classList.remove('low'); return; }
+  if(S.ended) return;
+  var l=left();
+  clk.textContent=S.hideClock?'--:--':fmt(l);
+  bar.style.width=Math.max(0,Math.min(100,l/DURATION*100))+'%';
+  if(l<=0 && !S.timeUp){ S.timeUp=true; showLate(); }
+}
+setInterval(tick,250);
+function showLate(){
+  var r=$('#room');
+  if(!r||S.lateGone||$('#late')) return;
+  var d=document.createElement('div');
+  d.className='late'; d.id='late'; d.setAttribute('role','status');
+  d.innerHTML='<span>Il tempo previsto è finito. Non c’è nessuna penalità: continuate con calma fino all’ultima porta.</span><button class="btn ghost" id="lateok" type="button">Ho capito</button>';
+  r.insertBefore(d,r.firstChild);
+  $('#lateok').onclick=function(){ S.lateGone=true; d.remove(); };
+}
+$('#ckbtn').onclick=function(){
+  S.hideClock=!S.hideClock;
+  this.textContent=S.hideClock?'Mostra':'Nascondi';
+  this.setAttribute('aria-pressed',String(S.hideClock));
+  tick();
+};
+
+/* ---------- caselle della parola-chiave ---------- */
+function renderSlots(){
+  var h='';
+  for(var i=0;i<ROOMS.length;i++){
+    var cls='slot'+(S.solved[i]?' on':((S.phase==='room'&&S.room===i)?' cur':''));
+    var lab=S.solved[i]?('Stanza '+(i+1)+': lettera '+ROOMS[i].letter):('Stanza '+(i+1)+': da aprire');
+    h+='<div class="'+cls+'" role="listitem" aria-label="'+lab+'">'+(S.solved[i]?ROOMS[i].letter:(i+1))+'</div>';
+  }
+  $('#slots').innerHTML=h;
+}
+
+/* ---------- il brano ---------- */
+function branoCard(){
+  var h='';
+  PARAS.forEach(function(p,i){ h+='<p class="par"><span class="pn">¶'+(i+1)+'</span><span>'+p+'</span></p>'; });
+  h+='<h3>Parole difficili</h3><dl>';
+  WORDS.forEach(function(w){ h+='<div><dt>'+esc(w[0])+'</dt><dd>'+esc(w[1])+'</dd></div>'; });
+  h+='</dl><h3>Chi è chi</h3><dl>';
+  WHO.forEach(function(w){ h+='<div><dt>'+esc(w[0])+'</dt><dd>'+esc(w[1])+'</dd></div>'; });
+  h+='</dl>';
+  return '<aside class="brano" id="brano" aria-label="Testo del brano">'+
+    '<header><div><h2>Laboriosità dei Malavoglia e irrequietudini di ’Ntoni</h2><p class="by">Giovanni Verga, I Malavoglia, cap. VI</p></div>'+
+    '<button class="tog" id="tog" type="button" aria-expanded="true">Nascondi</button></header>'+
+    '<div class="scroll" tabindex="0">'+h+'</div>'+
+    '<p class="credit">Brano e note dall’antologia Pearson Italia, «Analisi e interpretazione di un testo letterario italiano».</p></aside>';
+}
+function ensureStage(){
+  if($('#room')) return;
+  $('#app').innerHTML='<div class="wrap"><div class="stage">'+branoCard()+'<section class="room" id="room"></section></div></div>';
+  $('#tog').onclick=function(){
+    var shut=$('#brano').classList.toggle('shut');
+    this.textContent=shut?'Mostra il brano':'Nascondi';
+    this.setAttribute('aria-expanded',String(!shut));
+  };
+}
+
+/* ---------- schermata iniziale ---------- */
+function viewIntro(){
+  S.phase='intro'; renderSlots(); tick();
+  $('#app').innerHTML=
+  '<div class="hero"><div class="wrap">'+
+    '<svg class="boat" viewBox="0 0 120 92" aria-hidden="true"><path d="M58 6 L58 58 L18 58 Z" fill="#fff3d4"/><path d="M63 18 L63 58 L98 58 Z" fill="#f0b445"/><path d="M8 62 L112 62 Q102 82 84 84 L36 84 Q18 82 8 62 Z" fill="#fff3d4"/><path d="M6 90 Q20 84 34 90 T62 90 T90 90 T118 90" fill="none" stroke="#9fd2dc" stroke-width="2"/></svg>'+
+    '<p class="eyebrow">Escape room di analisi del testo in prosa · 20 minuti</p>'+
+    '<h1>Il debito dei Malavoglia</h1>'+
+    '<p class="sub">Lo zio Crocifisso aspetta di essere pagato e la Provvidenza è ancora in riparazione. Per farla salpare serve una parola di cinque lettere, nascosta nel brano che leggerete.</p>'+
+    '<ul class="rules">'+
+      '<li><b>5</b><span>stanze da attraversare in ordine. Ogni stanza ha due o tre prove e dà una lettera.</span></li>'+
+      '<li><b>20:00</b><span>per arrivare alla porta finale. Il tempo è solo una guida: non ci sono penalità.</span></li>'+
+      '<li><b>Aiuti</b><span>Ogni stanza ha un aiuto gratuito. Dopo ogni prova una breve spiegazione dice perché la risposta è giusta.</span></li>'+
+    '</ul>'+
+    '<button class="btn night" id="go" type="button">Entra nel cortile e avvia il tempo</button>'+
+  '</div></div>'+
+  '<div class="wrap"><p class="intro-foot">Si gioca a squadre di due-quattro persone. Il brano resta sempre accanto alle prove (sul telefono, sopra la prova). Il tempo parte quando premete il pulsante e si può nascondere dal riquadro in alto.</p></div>';
+  $('#go').onclick=function(){ S=fresh(); S.startAt=Date.now(); viewRoom(0); };
+}
+
+/* ---------- prove ---------- */
+function taskHTML(ri,ti,t,n){
+  var id=ri+'-'+ti, b='';
+  if(t.type==='choice'||t.type==='multi'){
+    var ty=t.type==='choice'?'radio':'checkbox';
+    b='<div class="opts" role="group" aria-labelledby="q-'+id+'">';
+    t.opts.forEach(function(o,k){
+      b+='<label class="opt" for="o-'+id+'-'+k+'"><input type="'+ty+'" id="o-'+id+'-'+k+'" name="o-'+id+'" value="'+k+'"><span>'+esc(o)+'</span></label>';
+    });
+    b+='</div>';
+  } else if(t.type==='match'){
+    b='<div class="matchlist">';
+    t.items.forEach(function(it,k){
+      b+='<div class="row"><label class="p" for="m-'+id+'-'+k+'"><span class="mk"></span>'+it.p+'</label><select id="m-'+id+'-'+k+'"><option value="">Scegli…</option>';
+      optsOf(t,it).forEach(function(o,j){ b+='<option value="'+j+'">'+esc(o)+'</option>'; });
+      b+='</select></div>';
+    });
+    b+='</div>';
+  } else if(t.type==='sort'){
+    b='<div class="sortlist">';
+    t.items.forEach(function(it,k){
+      b+='<div class="row"><span class="p"><span class="mk"></span>'+esc(it.w)+'</span><div class="seg" role="radiogroup" aria-label="'+esc(it.w)+'">';
+      t.cats.forEach(function(c,j){
+        b+='<label class="chip" for="s-'+id+'-'+k+'-'+j+'"><input type="radio" id="s-'+id+'-'+k+'-'+j+'" name="s-'+id+'-'+k+'" value="'+j+'"><span>'+esc(c)+'</span></label>';
+      });
+      b+='</div></div>';
+    });
+    b+='</div>';
+  }
+  return '<div class="task" id="task-'+id+'"><p class="tn">Prova '+(ti+1)+' di '+n+'</p><p class="q" id="q-'+id+'">'+t.q+'</p>'+b+
+    '<div class="tact"><button class="btn mare" type="button" data-act="check" data-t="'+ti+'">Controlla</button>'+
+    '<button class="btn ghost" type="button" data-act="reveal" data-t="'+ti+'" hidden>Vedi la risposta</button></div>'+
+    '<p class="fb" role="status"></p><div class="why" hidden></div></div>';
+}
+/* ritorna {pending?, ok, rows?, right?, wrong?, total?} */
+function evalTask(t,ri,ti){
+  var id=ri+'-'+ti, root=document.getElementById('task-'+id), rows, k, v, c;
+  if(t.type==='choice'){
+    c=root.querySelector('input:checked');
+    if(!c) return {pending:'Scegli una risposta prima di controllare.'};
+    return {ok:+c.value===t.ok};
+  }
+  if(t.type==='multi'){
+    var got=[].slice.call(root.querySelectorAll('input:checked')).map(function(i){return +i.value;});
+    if(!got.length) return {pending:'Seleziona almeno una risposta prima di controllare.'};
+    var right=got.filter(function(i){return t.ok.indexOf(i)>=0;}).length, wrong=got.length-right;
+    return {ok:wrong===0&&right===t.ok.length, right:right, wrong:wrong, total:t.ok.length};
+  }
+  if(t.type==='match'){
+    rows=[];
+    for(k=0;k<t.items.length;k++){
+      v=document.getElementById('m-'+id+'-'+k).value;
+      if(v==='') return {pending:'Completa tutte le righe prima di controllare.'};
+      rows.push(v===String(t.items[k].ok));
+    }
+    return {ok:rows.every(Boolean), rows:rows};
+  }
+  if(t.type==='sort'){
+    rows=[];
+    for(k=0;k<t.items.length;k++){
+      c=root.querySelector('input[name="s-'+id+'-'+k+'"]:checked');
+      if(!c) return {pending:'Assegna tutte le parole prima di controllare.'};
+      rows.push(+c.value===t.items[k].ok);
+    }
+    return {ok:rows.every(Boolean), rows:rows};
+  }
+  return {ok:false};
+}
+function applySolution(t,ri,ti){
+  var id=ri+'-'+ti, root=document.getElementById('task-'+id);
+  if(t.type==='choice'||t.type==='multi'){
+    [].forEach.call(root.querySelectorAll('input'),function(i){
+      var v=+i.value;
+      i.checked=(t.type==='choice')?(v===t.ok):(t.ok.indexOf(v)>=0);
+    });
+  } else if(t.type==='match'){
+    t.items.forEach(function(it,k){ document.getElementById('m-'+id+'-'+k).value=String(it.ok); });
+  } else if(t.type==='sort'){
+    t.items.forEach(function(it,k){ var r=document.getElementById('s-'+id+'-'+k+'-'+it.ok); if(r) r.checked=true; });
+  }
+}
+function markRows(root,rows){
+  var list=root.querySelectorAll('.row');
+  [].forEach.call(list,function(el,k){
+    el.classList.remove('good','bad');
+    if(rows) el.classList.add(rows[k]?'good':'bad');
+  });
+}
+function checkTask(ri,ti,reveal){
+  var t=ROOMS[ri].tasks[ti], id=ri+'-'+ti;
+  if(S.done[ri][ti]) return;
+  var root=document.getElementById('task-'+id), fb=root.querySelector('.fb'), why=root.querySelector('.why');
+  var rev=root.querySelector('[data-act="reveal"]'), chk=root.querySelector('[data-act="check"]');
+  var res;
+  if(reveal){ applySolution(t,ri,ti); res={ok:true,rows:t.items&&t.type!=='choice'&&t.type!=='multi'?t.items.map(function(){return true;}):null}; }
+  else res=evalTask(t,ri,ti);
+  if(res.pending){ root.classList.remove('ko'); fb.textContent=res.pending; return; }
+  if(res.ok){
+    S.done[ri][ti]=true;
+    [].forEach.call(root.querySelectorAll('input,select'),function(e){ e.disabled=true; });
+    root.classList.remove('ko'); root.classList.add('ok');
+    markRows(root,res.rows||null);
+    fb.textContent=reveal?'Ecco la risposta. Leggi la spiegazione e andiamo avanti.':'✓ Corretto';
+    why.innerHTML='<b>Perché</b>'+t.why; why.hidden=false;
+    chk.hidden=true; rev.hidden=true;
+    if(S.done[ri].every(Boolean)) clearRoom(ri);
+    return;
+  }
+  S.tries[ri][ti]++;
+  root.classList.add('ko');
+  var msg='';
+  if(res.rows){
+    var good=res.rows.filter(Boolean).length;
+    msg='Righe giuste: '+good+' su '+res.rows.length+'. Correggi quelle segnate con ↻ e riprova.';
+    markRows(root,res.rows);
+  } else if(res.total){
+    if(res.right===res.total) msg='Hai trovato tutte le risposte giuste, ma ne hai selezionata una di troppo.';
+    else if(res.wrong>0) msg='Hai individuato '+res.right+' risposte giuste su '+res.total+', ma almeno una di quelle scelte non è corretta.';
+    else msg='Hai individuato '+res.right+' risposte giuste su '+res.total+'. Ne manca ancora qualcuna.';
+    msg+=' '+(t.nudge||'');
+  } else {
+    msg='Non ancora. '+(t.nudge||'Rileggi la domanda e il passo indicato, poi riprova.');
+  }
+  fb.textContent=msg;
+  if(S.tries[ri][ti]>=2) rev.hidden=false;
+}
+
+/* ---------- stanze ---------- */
+function viewRoom(ri){
+  var R=ROOMS[ri]; S.room=ri; S.phase='room'; ensureStage();
+  renderSlots();
+  var h='<p class="eyebrow">Stanza '+(ri+1)+' di '+ROOMS.length+' · '+esc(R.step)+'</p><h2 id="rt" tabindex="-1">'+R.nome+'</h2><p class="lead">'+R.intro+'</p>';
+  R.tasks.forEach(function(t,ti){ h+=taskHTML(ri,ti,t,R.tasks.length); });
+  h+='<div class="door"><button class="btn ghost" id="hintbtn" type="button">Un aiuto (gratuito)</button></div>'+
+     '<div class="hintbox" id="hintbox" hidden></div><div id="clearbox"></div>';
+  $('#room').innerHTML=h;
+  $('#hintbtn').onclick=function(){ useHint(ri); };
+  [].forEach.call($('#room').querySelectorAll('[data-act]'),function(b){
+    b.onclick=function(){ checkTask(ri,+b.getAttribute('data-t'),b.getAttribute('data-act')==='reveal'); };
+  });
+  if(S.timeUp && !S.lateGone) showLate();
+  if(ri>0 && window.innerWidth<900){ $('#room').scrollIntoView(); } else { window.scrollTo(0,0); }
+  $('#rt').focus({preventScroll:true});
+}
+function useHint(ri){
+  var hb=$('#hintbox');
+  if(!S.hint[ri]){ S.hint[ri]=true; S.hints++; }
+  hb.hidden=false; hb.innerHTML='<b>Aiuto</b>'+esc(ROOMS[ri].hint);
+  $('#hintbtn').disabled=true;
+}
+function clearRoom(ri){
+  S.solved[ri]=true; renderSlots();
+  $('#hintbtn').disabled=true;
+  var last=(ri===ROOMS.length-1);
+  $('#clearbox').innerHTML='<div class="clear"><div class="bigletter" aria-hidden="true">'+ROOMS[ri].letter+'</div>'+
+    '<div><p class="t">Stanza aperta. Lettera trovata: '+ROOMS[ri].letter+'</p><p class="nt">'+ROOMS[ri].note+'</p></div>'+
+    '<button class="btn mare" id="next" type="button">'+(last?'Vai alla porta finale':'Prossima stanza')+'</button></div>';
+  $('#next').onclick=function(){ if(last) viewFinal(); else viewRoom(ri+1); };
+  $('#clearbox').scrollIntoView({block:'nearest'});
+  $('#next').focus({preventScroll:true});
+}
+
+/* ---------- porta finale e risultato ---------- */
+function viewFinal(){
+  S.phase='final'; renderSlots();
+  $('#room').innerHTML='<p class="eyebrow">Porta finale</p><h2 id="rt" tabindex="-1">Il varo della Provvidenza</h2>'+
+    '<p class="lead">Le cinque serrature hanno dato cinque lettere. Scrivi la parola che formano, nell’ordine delle stanze: è il nome di chi ha scritto il brano.</p>'+
+    '<form class="keybox" id="keyform" autocomplete="off"><label for="keyin" class="eyebrow">Parola-chiave</label>'+
+    '<input type="text" id="keyin" maxlength="12" autocomplete="off" autocapitalize="characters" spellcheck="false">'+
+    '<div class="door fin"><button class="btn mare" type="submit">Fai salpare la barca</button></div><p class="fb" id="keyfb" role="status"></p></form>';
+  if(S.timeUp && !S.lateGone) showLate();
+  $('#keyform').onsubmit=function(e){
+    e.preventDefault();
+    if(norm($('#keyin').value)===norm(KEY)){ viewWin(); }
+    else { $('#keyfb').textContent='Non è ancora questa. Guarda le lettere nell’intestazione, nell’ordine delle stanze, e riprova.'; }
+  };
+  if(window.innerWidth<900){ $('#room').scrollIntoView(); } else { window.scrollTo(0,0); }
+  $('#keyin').focus({preventScroll:true});
+}
+function viewWin(){
+  var used=(Date.now()-S.startAt)/1000;
+  S.ended=true; S.phase='win'; renderSlots();
+  var h='<div class="wrap"><section class="room win"><p class="eyebrow">La Provvidenza salpa</p><h2>'+KEY+'</h2>'+
+    '<p class="lead">Verga non spiega e non giudica: lascia parlare i fatti, le battute e il denaro. Questa tecnica si chiama impersonalità, e l’avete incontrata in ogni stanza.</p>'+
+    '<div class="stats"><div><b>'+fmt(used)+'</b>tempo impiegato</div><div><b>'+S.hints+'</b>aiuti usati</div></div>'+
+    '<ol class="method" aria-label="I passi dell’analisi di un testo in prosa">';
+  ROOMS.forEach(function(R,i){ h+='<li><span class="st">Passo '+(i+1)+' · '+esc(R.step)+'</span><strong>'+R.nome+'</strong>'+R.note+'</li>'; });
+  h+='</ol><div class="door"><button class="btn ghost" id="again" type="button">Gioca di nuovo</button></div></section></div>';
+  $('#app').innerHTML=h;
+  $('#again').onclick=function(){ S=fresh(); $('#app').innerHTML=''; viewIntro(); window.scrollTo(0,0); };
+  window.scrollTo(0,0);
+}
+
+/* ---------- soluzioni per il docente (aggiungere #docente all’indirizzo) ---------- */
+function solution(t){
+  if(t.type==='choice') return esc(t.opts[t.ok]);
+  if(t.type==='multi') return t.ok.map(function(i){ return esc(t.opts[i]); }).join('<br>');
+  if(t.type==='match') return t.items.map(function(it){ return strip(it.p)+' → <b>'+esc(optsOf(t,it)[it.ok])+'</b>'; }).join('<br>');
+  if(t.type==='sort') return t.items.map(function(it){ return esc(it.w)+' → <b>'+esc(t.cats[it.ok])+'</b>'; }).join('<br>');
+  return '';
+}
+function teacher(){
+  var ex=$('#teach');
+  if(location.hash!=='#docente'){ if(ex) ex.remove(); return; }
+  if(ex) return;
+  var h='<div class="wrap"><p class="eyebrow">Soluzioni per il docente</p><h2>Escape Room Malavoglia</h2>'+
+    '<p class="nt">Parola-chiave finale: <b>'+KEY+'</b>. Durata indicativa '+fmt(DURATION)+'. Nessuna penalità. Un aiuto gratuito per stanza. Dopo due tentativi sbagliati compare «Vedi la risposta».</p>'+
+    '<p style="margin-top:14px"><a class="btn ghost" href="#" style="display:inline-block;text-decoration:none">Chiudi</a></p>';
+  ROOMS.forEach(function(R,ri){
+    h+='<h3>Stanza '+(ri+1)+' · '+R.nome+' · '+R.step+' · lettera '+R.letter+'</h3><div class="scr"><table><tbody>';
+    R.tasks.forEach(function(t){ h+='<tr><td>'+strip(t.q)+'</td><td>'+solution(t)+'<br><em>'+esc(t.why)+'</em></td></tr>'; });
+    h+='</tbody></table></div><p class="nt">Aiuto: '+esc(R.hint)+'</p>';
+  });
+  h+='</div>';
+  var d=document.createElement('div'); d.className='teach'; d.id='teach'; d.innerHTML=h;
+  document.body.appendChild(d);
+}
+
+window.addEventListener('hashchange',teacher);
+viewIntro();
+teacher();
+})();
+</script>
+
+</body></html>
